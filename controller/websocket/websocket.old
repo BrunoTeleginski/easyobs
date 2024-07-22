@@ -1,0 +1,71 @@
+package wscontroller
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/gorilla/websocket"
+)
+
+var(
+    upgrader = websocket.Upgrader{
+        ReadBufferSize:  1024,
+        WriteBufferSize: 1024,
+    }
+    wsContext *websocket.Conn
+)
+
+func Send(msg string){
+
+    if wsContext == nil{
+        log.Println("Nobody connected!")
+        return
+    }
+    
+    err := wsContext.WriteMessage(1, []byte(msg))
+
+    if err != nil {
+        log.Println(err)
+    }
+}
+
+func WsEndpoint(w http.ResponseWriter, r *http.Request) {
+    
+    upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+
+    // upgrade this connection to a WebSocket
+    // connection
+    var err error
+    wsContext, err = upgrader.Upgrade(w, r, nil)
+    if err != nil {
+        log.Println(err)
+    }
+    defer wsContext.Close()
+ 
+    log.Println("Client Connected")
+    err = wsContext.WriteMessage(1, []byte("Hello client you've connected!"))
+    if err != nil {
+        log.Println(err)
+    }
+    reader()
+}
+ 
+func reader() {
+    for {
+        // read in a message
+        messageType, p, err := wsContext.ReadMessage()
+        if err != nil {
+            log.Println(err)
+            return
+        }
+ 
+        // print out incoming message
+        fmt.Println("incoming message: " + string(p))
+ 
+        if err := wsContext.WriteMessage(messageType, p); err != nil {
+            log.Println(err)
+            return
+        }
+    }
+}

@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ebpf
+  labels:
+    app: ebpf
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ebpf
+  template:
+    metadata:
+      labels:
+        app: ebpf
+    spec:
+
+      volumes:
+      - name: kerneltraces
+        hostPath:
+          path: /sys/kernel/debug
+      - name: kernelmodule
+        hostPath:
+          path: /lib/modules
+      - name: kernelsource
+        hostPath:
+          path: /usr/src
+      containers:
+      - name: ebpf-container
+        image: {{ .Values.ebpf.image }}:{{ .Values.ebpf.tag }}
+        securityContext:
+          privileged: true
+        #command: ["python3","-m", "/app/tracepoint:sock:inet_sock_set_state/attacher.py"]
+        #command: ["/bin/bash","-c", "sleep 800000"]
+        volumeMounts:
+        - name: kerneltraces
+          mountPath: /sys/kernel/debug
+        - name: kernelmodule
+          mountPath: /lib/modules
+        - name: kernelsource
+          mountPath: /usr/src

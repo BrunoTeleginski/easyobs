@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: easyobs-controller-deployment
+  labels:
+    app: easyobs-controller
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: easyobs-controller
+  template:
+    metadata:
+      labels:
+        app: easyobs-controller
+    spec:
+      serviceAccountName: easyobs
+      automountServiceAccountToken: true
+      containers:
+      - name: controller
+        image: {{ .Values.controller.image }}:{{ .Values.controller.tag }}
+        ports:
+        - containerPort: 8080
+        env:
+          - name: REDIS_HOST
+            value: "easyobs-redis-ha-haproxy"
+          - name: REDIS_PORT
+            value: "6379"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: easyobs-controller-svc
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  selector:
+    app: easyobs-controller
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

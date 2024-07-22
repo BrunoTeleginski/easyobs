@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: easyobs
+  namespace: "{{ .Release.Namespace }}"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: easyobs-view
+subjects:
+  - kind: ServiceAccount
+    name: easyobs
+    namespace: "{{ .Release.Namespace }}"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: easyobs-data-controller-deployment
+  labels:
+    app: easyobs-data-controller
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: easyobs-data-controller
+  template:
+    metadata:
+      labels:
+        app: easyobs-data-controller
+    spec:
+      serviceAccountName: easyobs
+      containers:
+      - name: controller
+        image: {{ .Values.dataController.image }}:{{ .Values.dataController.tag }}
+        ports:
+        - containerPort: 9000
+        env:
+          - name: REDIS_HOST
+            value: "easyobs-redis-ha-haproxy"
+          - name: REDIS_PORT
+            value: "6379"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: easyobs-data-controller-svc
+spec:
+  selector:
+    app: easyobs-data-controller
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9000

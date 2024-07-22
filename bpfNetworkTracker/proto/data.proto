@@ -1,0 +1,15 @@
+syntax = "proto3";
+package data;
+import "google/protobuf/struct.proto";
+
+message Data {
+  google.protobuf.Struct Metadata = 1;
+}
+
+message Status {
+  int32 Status = 1;
+}
+
+service DataService {
+  rpc Send(Data) returns (Status) {}
+}

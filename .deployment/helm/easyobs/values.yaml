@@ -1,0 +1,61 @@
+ebpf:
+  image: brunoteleginski/bpf-xdp
+  tag: v4.0.7
+
+controller:
+  image: brunoteleginski/easyobs-controller
+  tag: 1.0.5
+
+dataController:
+  image: brunoteleginski/easyobs-data-controller
+  tag: 1.0.3
+
+frontend:
+  image: brunoteleginski/easyobs-frontend
+  tag: 1.0.6
+
+## Redis-HA subchart replaces custom redis deployment when `redis-ha.enabled=true`
+# Ref: https://github.com/DandyDeveloper/charts/blob/master/charts/redis-ha/values.yaml
+redis-ha:
+  auth: false
+  # -- Enables the Redis HA subchart and disables the custom Redis single node deployment
+  enabled: true
+  ## replicas number for each component
+  replicas: 2
+  persistentVolume:
+    # -- Configures persistence on Redis nodes
+    enabled: false
+  ## Redis specific configuration options
+  redis:
+    # -- Redis convention for naming the cluster group: must match `^[\\w-\\.]+$` and can be templated
+    masterGroupName: redisdb
+    # -- Any valid redis config options in this section will be applied to each server (see `redis-ha` chart)
+    # @default -- See [values.yaml]
+    config:
+      # -- Will save the DB if both the given number of seconds and the given number of write operations against the DB occurred. `""`  is disabled
+      # @default -- `'""'`
+      save: '""'
+      ## Additional redis conf options can be added below
+      ## For all available options see http://download.redis.io/redis-stable/redis.conf
+      min-replicas-to-write: 1
+  ## Enables a HA Proxy for better LoadBalancing / Sentinel Master support. Automatically proxies to Redis master.
+  haproxy:
+    # -- Enabled HAProxy LoadBalancing/Proxy
+    enabled: true
+    replicas: 1
+    metrics:
+      # -- HAProxy enable prometheus metric scraping
+      enabled: true
+    # -- Whether the haproxy pods should be forced to run on separate nodes.
+    hardAntiAffinity: true
+    ## Service for HAProxy
+    service:
+      type: NodePort
+      nodePort: 31999
+
+  # -- Whether the Redis server pods should be forced to run on separate nodes.
+  hardAntiAffinity: false
+
+
+  
+
